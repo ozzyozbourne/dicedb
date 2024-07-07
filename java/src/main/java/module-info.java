@@ -1,4 +1,4 @@
-module org.example {
-    exports org.example;
+module org.dice {
+    exports org.dice;
     requires org.apache.logging.log4j;
 }

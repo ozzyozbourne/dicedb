@@ -1,8 +1,8 @@
-package org.example;
+package org.dice;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.server.TcpSync;
+import org.dice.server.TcpSync;
 
 final public class Main {
 

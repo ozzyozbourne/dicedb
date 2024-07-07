@@ -1,6 +1,6 @@
-package org.example.config;
+package org.dice.config;
 
 public interface Config {
     String HOST = "0.0.0.0";
-    int PORT = 7379;
+    int PORT = 7380;
 }

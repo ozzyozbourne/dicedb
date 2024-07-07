@@ -3,9 +3,13 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
-	"github.com/ozzyozbourne/dicedb/go/config"
-	"github.com/ozzyozbourne/dicedb/go/server"
+	"github.com/dicedb/dice/config"
+	"github.com/dicedb/dice/server"
 )
 
 func setupFlags() {
@@ -16,6 +20,15 @@ func setupFlags() {
 
 func main() {
 	setupFlags()
-	log.Printf("Rolling the dice 🎲")
-	server.RunSyncTCPServer()
+	log.Println("rolling the dice \u2684\uFE0E")
+
+	var sigs chan os.Signal = make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go server.RunAsyncTCPServer(&wg)
+	go server.WaitForSignal(&wg, sigs)
+
+	wg.Wait()
 }

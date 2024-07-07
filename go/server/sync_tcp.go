@@ -1,63 +1,54 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"log"
-	"net"
+	"strings"
 
-	"github.com/ozzyozbourne/dicedb/go/config"
+	"github.com/dicedb/dice/core"
 )
 
-func readCommand(c net.Conn) ([]byte, error) {
-	buf := make([]byte, 512)
+func toArrayString(ai []interface{}) ([]string, error) {
+	as := make([]string, len(ai))
+	for i := range ai {
+		as[i] = ai[i].(string)
+	}
+	return as, nil
+}
+
+func readCommands(c io.ReadWriter) (core.RedisCmds, bool, error) {
+	// TODO: Max read in one shot is 512 bytes
+	// To allow input > 512 bytes, then repeated read until
+	// we get EOF or designated delimiter
+	var buf []byte = make([]byte, 512)
 	n, err := c.Read(buf[:])
 	if err != nil {
-		return []byte{}, err
+		return nil, false, err
 	}
-	return buf[:n], nil
-}
 
-func respond(cmd []byte, c net.Conn) error {
-	if _, err := c.Write(cmd); err != nil {
-		return err
-	}
-	return nil
-}
-
-func RunSyncTCPServer() {
-	log.Printf("starting a synchronous TCP server on %s %d\n", config.Host, config.Port)
-	var con_clients int
-
-	lsnr, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.Host, config.Port))
+	values, maliciousFlag, err := core.Decode(buf[:n])
 	if err != nil {
-		panic(err)
+		return nil, maliciousFlag, err
 	}
-	for {
-		c, err := lsnr.Accept()
+	if maliciousFlag {
+		log.Println("Possible SECURITY ATTACK detected. This is likely due to an attacker attempting to use Cross Protocol Scripting to compromise your instance. Connection aborted.")
+		return nil, true, nil
+	}
+
+	var cmds []*core.RedisCmd = make([]*core.RedisCmd, 0)
+	for _, value := range values {
+		tokens, err := toArrayString(value.([]interface{}))
 		if err != nil {
-			panic(err)
+			return nil, false, err
 		}
-		con_clients += 1
-		log.Printf("client connected with address: %v concurrent clients: %d\n", c.RemoteAddr(), con_clients)
-
-		for {
-			cmd, err := readCommand(c)
-			if err != nil {
-				c.Close()
-				con_clients -= 1
-				log.Printf("client disconnected %v concurrent clients %d\n", c.RemoteAddr(), con_clients)
-				if err == io.EOF {
-					break
-				}
-				log.Printf("%v\n", err)
-			}
-			log.Printf("command: %s", cmd)
-			if err := respond(cmd, c); err != nil {
-				log.Printf("%v\n", err)
-			}
-		}
-
+		cmds = append(cmds, &core.RedisCmd{
+			Cmd:  strings.ToUpper(tokens[0]),
+			Args: tokens[1:],
+		})
 	}
+	return cmds, false, err
+}
 
+func respond(cmds core.RedisCmds, c *core.Client) {
+	core.EvalAndRespond(cmds, c)
 }

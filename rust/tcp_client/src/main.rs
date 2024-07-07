@@ -7,7 +7,7 @@ use std::{
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
+    if args.len() <= 3 {
         eprintln!("Usage: {} <HOST> <PORT>", args[0]);
     }
 

@@ -1,8 +1,8 @@
-package org.example.server;
+package org.dice.server;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.config.Config;
+import org.dice.config.Config;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
