@@ -3,6 +3,8 @@ package org.dice.core;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Optional;
 
 import static java.lang.String.format;
@@ -73,9 +75,9 @@ public final class RESPDecoder {
     }
     private static Ct.RESPNull readNull(final byte[] data, final int pos) {return new Ct.RESPNull(pos + 2);}
 
-    private static Ct.RESPMap readMap(final byte[] data, final int pos) {return new Ct.RESPMap(1);}
+    private static Ct.RESPMap readMap(final byte[] data, final int pos) {return new Ct.RESPMap(new HashMap<>(), 1);}
 
-    private static Ct.RESPSet readSet(final byte[] data, final int pos) {return new Ct.RESPSet(1);}
+    private static Ct.RESPSet readSet(final byte[] data, final int pos) {return new Ct.RESPSet(new HashSet<>(), 1);}
 
     private static Ct.RESPSimpleString readUptoPoint(final byte[] data, int pos) {
         final var start = pos;
