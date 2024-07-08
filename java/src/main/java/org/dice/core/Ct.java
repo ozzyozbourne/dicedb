@@ -28,8 +28,11 @@ public final class Ct {
 
     public static final class RESPDouble extends RESPTypes {
 
-        public RESPDouble(final Integer pos) {
+        public final Double val;
+
+        public RESPDouble(final Double val, final Integer pos) {
             super(pos);
+            this.val = val;
         }
     }
 
@@ -46,8 +49,12 @@ public final class Ct {
     }
 
     public static final class RESPBoolean extends RESPTypes {
-        public RESPBoolean(final Integer pos) {
+
+        public final Boolean val;
+
+        public RESPBoolean(final Boolean val, final Integer pos) {
             super(pos);
+            this.val = val;
         }
     }
 

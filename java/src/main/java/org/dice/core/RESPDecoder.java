@@ -3,6 +3,8 @@ package org.dice.core;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Optional;
+
 import static java.lang.String.format;
 
 public final class RESPDecoder {
@@ -19,19 +21,18 @@ public final class RESPDecoder {
         }return new Ct.Tuple<>(val, pos + 2);
     }
 
-
     private static Ct.RESPLong readLong(final byte[] data, int pos) {
-        long sign = 1;
-
-        switch (data[pos]) {
-            case '+' -> pos += 1;
+        final var sign = switch (data[pos]) {
+            case '+' -> {
+                pos += 1;
+                yield 1;
+            }
             case '-' -> {
                 pos += 1;
-                sign = -sign;
+                yield -1;
             }
-            default -> logger.info("Integer has no sign");
-        }
-
+            default -> 1;
+        };
         long value = 0;
 
         while (data[pos] != '\r') {
@@ -62,16 +63,64 @@ public final class RESPDecoder {
         final var arr = new Ct.RESPTypes[out.t1()];
         int r = out.t2();
         for(int i = 0; i< out.t1(); i++){
-            arr[i] = decodeOne(data, r);;
+            arr[i] = decodeOne(data, r);
             r = arr[i].pos;
         }return new Ct.RESPArray(arr, r);
     }
 
-    private static Ct.RESPBoolean readBoolean(final byte[] data, final int pos) {return new Ct.RESPBoolean(1);}
-    private static Ct.RESPNull readNull(final byte[] data, final int pos) {return new Ct.RESPNull(1);}
+    private static Ct.RESPBoolean readBoolean(final byte[] data, final int pos) {
+        return (data[pos]) == 't'? new Ct.RESPBoolean(true, pos + 3): new Ct.RESPBoolean(false, pos + 3);
+    }
+    private static Ct.RESPNull readNull(final byte[] data, final int pos) {return new Ct.RESPNull(pos + 2);}
+
     private static Ct.RESPMap readMap(final byte[] data, final int pos) {return new Ct.RESPMap(1);}
+
     private static Ct.RESPSet readSet(final byte[] data, final int pos) {return new Ct.RESPSet(1);}
-    private static Ct.RESPDouble readDouble(final byte[] data, final int pos) {return new Ct.RESPDouble(1);}
+
+    private static Ct.RESPSimpleString readUptoPoint(final byte[] data, int pos) {
+        final var start = pos;
+        while (data[pos] != '.') pos++;
+        return new Ct.RESPSimpleString(new String(data, start, pos - start),pos + 1);
+    }
+
+    private static Ct.RESPSimpleString readAfterPoint(final byte[] data, int pos) {
+        final int start = pos;
+        while (data[pos] != '\r') pos++;
+        return new Ct.RESPSimpleString(new String(data, start, pos - start),pos + 2);
+    }
+
+    private static Optional<Ct.RESPDouble> checkInfAndNan(final byte[] data, final int pos, final char sign) {
+        return switch (new String(data, pos, 3)){
+            case "inf" -> sign == '-'? Optional.of(new Ct.RESPDouble(Double.NEGATIVE_INFINITY, pos + 5)):
+                Optional.of(new Ct.RESPDouble(Double.POSITIVE_INFINITY, pos + 5));
+            case "nan" -> Optional.of(new Ct.RESPDouble(Double.NaN, pos + 5));
+            default -> Optional.empty();
+        };
+    }
+
+    private static Ct.RESPDouble readDouble(final byte[] data, int pos) {
+        final var sign = switch (data[pos]) {
+            case '+' -> {
+                pos += 1;
+                yield '+';
+            }
+            case '-' -> {
+                pos += 1;
+                yield  '-';
+            }
+            default -> '+';
+        };
+
+        final var infNanCheck = checkInfAndNan(data, pos, sign);
+        if (infNanCheck.isPresent()) return infNanCheck.get();
+
+        final var n1 = readUptoPoint(data, pos);
+        final var n2 = readAfterPoint(data, n1.pos);
+
+        return Integer.parseInt(n1.val) == 0 && Integer.parseInt(n2.val) == 0?
+                new Ct.RESPDouble(Double.parseDouble(format("%d.%d", 0, 0)), n2.pos):
+                new Ct.RESPDouble(Double.parseDouble(format("%c%s.%s", sign, n1.val, n2.val)), n2.pos);
+    }
 
 
     private static Ct.RESPTypes decodeOne(final byte[] data, final int pos) throws IllegalStateException {
@@ -90,8 +139,8 @@ public final class RESPDecoder {
         };
     }
 
-    public static Ct.RESPTypes decode(final byte[] data) throws Exception {
-        if (data.length == 0) throw new Exception("no data");
+    public static Ct.RESPTypes decode(final byte[] data) throws IllegalStateException {
+        if (data.length == 0) throw new IllegalStateException("no data");
         return decodeOne(data, 0);
     }
 

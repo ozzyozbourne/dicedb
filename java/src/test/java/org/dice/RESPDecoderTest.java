@@ -143,5 +143,108 @@ public final class RESPDecoderTest {
         });
     }
 
+    @Test
+    public void booleanTest() {
+        final var testcases = Map.of(
+                "#t\r\n", new Ct.Tuple<>(true, 4),
+                "#f\r\n", new Ct.Tuple<>(false, 4)
+        );
+
+        testcases.forEach((input, expected) -> {
+            try {
+                final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
+                    case Ct.RESPBoolean res -> res;
+                    default -> throw new RuntimeException("FAILED PATTERN MATCH");
+                };
+
+                assertEquals(expected.t1(), output.val, expected.t1().toString());
+                assertEquals(expected.t2(), output.pos, expected.t1().toString());
+
+            } catch (final Exception e) {
+                logger.error(e);
+                throw new AssertionError(e);
+            }
+        });
+    }
+
+    @Test
+    public void nullTest() {
+        final var testcases = Map.of("_\r\n", new Ct.Tuple<>(true, 3));
+
+        testcases.forEach((input, expected) -> {
+            try {
+                final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
+                    case Ct.RESPNull res -> res;
+                    default -> throw new RuntimeException("FAILED PATTERN MATCH");
+                };
+
+                assertEquals(expected.t2(), output.pos, expected.t1().toString());
+
+            } catch (final Exception e) {
+                logger.error(e);
+                throw new AssertionError(e);
+            }
+        });
+    }
+
+    @Test
+    public void doubleTest1() {
+        final var testcases = Map.of(
+                ",1.23\r\n",       new Ct.Tuple<>(1.23, 7),
+                ",-4.56\r\n",      new Ct.Tuple<>(-4.56, 8),
+                ",0.789\r\n",      new Ct.Tuple<>(0.789, 8),
+                ",-0.001\r\n",     new Ct.Tuple<>(-0.001, 9),
+                ",-101.23123\r\n", new Ct.Tuple<>(-101.23123, 13),
+                ",-123.42123\r\n", new Ct.Tuple<>(-123.42123, 13),
+                ",123.456\r\n",    new Ct.Tuple<>(123.456, 10),
+                ",0.0\r\n",        new Ct.Tuple<>(0.0, 6),
+                ",-0.0\r\n",       new Ct.Tuple<>(0.0, 7),
+                ",-1123.321\r\n", new Ct.Tuple<>(-1123.321, 12)
+        );
+
+        testcases.forEach((input, expected) -> {
+            try {
+                final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
+                    case Ct.RESPDouble res -> res;
+                    default -> throw new RuntimeException("FAILED PATTERN MATCH");
+                };
+
+                assertEquals(expected.t1(), output.val, expected.t1().toString());
+                assertEquals(expected.t2(), output.pos, expected.t1().toString());
+
+            } catch (final Exception e) {
+                logger.error(e);
+                throw new AssertionError(e);
+            }
+        });
+    }
+
+    @Test
+    public void doubleTest2() {
+        final var testcases = Map.of(
+                ",inf\r\n",  new Ct.Tuple<>(Double.POSITIVE_INFINITY, 6),
+                ",-inf\r\n", new Ct.Tuple<>(Double.NEGATIVE_INFINITY, 7),
+                ",+inf\r\n", new Ct.Tuple<>(Double.POSITIVE_INFINITY, 7),
+                ",nan\r\n",  new Ct.Tuple<>(Double.NaN, 6)
+        );
+
+        testcases.forEach((input, expected) -> {
+            try {
+                final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
+                    case Ct.RESPDouble res -> res;
+                    default -> throw new RuntimeException("FAILED PATTERN MATCH");
+                };
+
+                assertEquals(expected.t1(), output.val, expected.t1().toString());
+                assertEquals(expected.t2(), output.pos, expected.t1().toString());
+
+            } catch (final Exception e) {
+                logger.error(e);
+                throw new AssertionError(e);
+            }
+        });
+    }
+
+
 
 }
