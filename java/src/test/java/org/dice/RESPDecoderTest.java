@@ -1,13 +1,11 @@
 package org.dice;
 
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dice.core.Ct;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -249,15 +247,15 @@ public final class RESPDecoderTest {
     }
 
     @Test
-    public void setTest() {
+    public void setTestSameTypes() {
 
         final var testcases = Map.of(
 
                 "~0\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(), 4),
 
-                "~1\r\n+OK\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(new Ct.RESPSimpleString("OK", 7)), 10),
+                "~1\r\n+OK\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(new Ct.RESPSimpleString("OK", 9)), 9),
 
-                "~2\r\n+Hello\r\n+World\r\n", new Ct.Tuple<>(Set.of(
+                "~2\r\n+Hello\r\n+World\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
                         new Ct.RESPSimpleString("Hello", 12),
                         new Ct.RESPSimpleString("World", 20)
                 ), 20),
@@ -266,56 +264,60 @@ public final class RESPDecoderTest {
                         new Ct.RESPLong(1L, 8),
                         new Ct.RESPLong(2L, 12),
                         new Ct.RESPLong(3L, 16)
-                ), 16)
+                ), 16),
 
-//                "~2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n", new Ct.Tuple<>(Set.of(
-//                        new Ct.RESPBulkString("foo", 9),
-//                        new Ct.RESPBulkString("bar", 18)
-//                ), 20),
-//                "~1\r\n~2\r\n:1\r\n:2\r\n", new Ct.Tuple<>(Set.of(
-//                        new Ct.RESPSet(Set.of(
-//                                new Ct.RESPLong(1L, 13),
-//                                new Ct.RESPLong(2L, 16)
-//                        ), 18)
-//                ), 20),
-//                "~2\r\n$5\r\nhello\r\n$5\r\nworld\r\n", new Ct.Tuple<>(Set.of(
-//                        new Ct.RESPBulkString("hello", 11),
-//                        new Ct.RESPBulkString("world", 22)
-//                ), 24),
-//                "~2\r\n+OK\r\n-Error message\r\n", new Ct.Tuple<>(Set.of(
-//                        new Ct.RESPSimpleString("OK", 7),
-//                        new Ct.RESPError("Error message", 23)
-//                ), 25),
-//                "~1\r\n,1.23\r\n", new Ct.Tuple<>(Set.of(new Ct.RESPDouble(1.23, 9)), 11),
-//                "~1\r\n,true\r\n", new Ct.Tuple<>(Set.of(new Ct.RESPBoolean(true, 9)), 11)
+                "~2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
+                        new Ct.RESPBulkString("foo", 13),
+                        new Ct.RESPBulkString("bar", 22)
+                ), 22),
+
+                "~3\r\n#t\r\n#f\r\n_\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
+                        new Ct.RESPBoolean(true, 8),
+                        new Ct.RESPBoolean(false, 12),
+                        new Ct.RESPNull(15)
+                        ), 15),
+
+                "~6\r\n,inf\r\n,-101.23123\r\n-ERR unknown command\r\n,nan\r\n$3\r\nbar\r\n:1000\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
+                        new Ct.RESPDouble(Double.POSITIVE_INFINITY, 10),
+                        new Ct.RESPDouble(-101.23123, 23),
+                        new Ct.RESPError("ERR unknown command", 45),
+                        new Ct.RESPDouble(Double.NaN, 51),
+                        new Ct.RESPBulkString("bar", 60),
+                        new Ct.RESPLong(1000L, 67)
+                ), 67)
+
         );
 
         testcases.forEach((input, expected) -> {
             try {
+                logger.info("input is -> {}", input);
                 final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
                     case Ct.RESPSet res -> res;
                     default -> throw new RuntimeException("FAILED PATTERN MATCH");
                 };
+
                 //Check Size
                 assertEquals(expected.t1().size(), output.val.size(), expected.t1().toString());
+
                 //Check Elements
                 expected.t1().forEach(s ->{
-                    final var exp = switch (s){
-                        case Ct.RESPSet res -> res;
-                        case Ct.RESPArray res -> res;
-                        case Ct.RESPMap res -> res;
-                        case Ct.RESPVerbatimString res -> res;
-                        case Ct.RESPSimpleString res -> res;
-                        case Ct.RESPBoolean res -> res;
-                        case Ct.RESPBulkString res -> res;
-                        case Ct.RESPDouble res -> res;
-                        case Ct.RESPNull res -> res;
-                        case Ct.RESPLong res -> res;
-                        case Ct.RESPError res -> res;
-                    };
-                    assertTrue(output.val.contains(s), s.toString());
+                    switch (s){
+                        case Ct.RESPSet res            -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPArray res          -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPMap res            -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPVerbatimString res -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPSimpleString res   -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPBoolean res        -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPBulkString res     -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPDouble res         -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPNull res           -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPLong res           -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                        case Ct.RESPError res          -> assertTrue(output.val.contains(res), "Actual Set -> %s\nExpected Value -> %s".formatted(output.val.toString() ,res.toString()));
+                    }
                 });
-                //assertEquals(expected.t2(), output.pos, expected.t1());
+
+                //Check pos
+                assertEquals(expected.t2(), output.pos, expected.t1().toString());
 
             } catch (final Exception e) {
                 logger.error(e);

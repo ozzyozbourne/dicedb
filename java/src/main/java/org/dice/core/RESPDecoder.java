@@ -55,8 +55,10 @@ public final class RESPDecoder {
     }
 
     private static Ct.RESPSimpleString readSimpleString(final byte[] data, int pos) {
-        while (data[pos] != '\r') pos++;
-        return new Ct.RESPSimpleString(new String(data, 1, pos - 1),pos + 2);
+        logger.info("Simple String init -> {}", pos);
+        final var start = pos;
+        while (data[pos] != '\r') pos += 1;
+        return new Ct.RESPSimpleString(new String(data, start, pos - start),pos + 2);
     }
 
     private static Ct.RESPError  readError(byte[] data, final int pos) {
@@ -95,10 +97,13 @@ public final class RESPDecoder {
         final var out = readLen(data, pos);
         final var set = new HashSet<Ct.RESPTypes>(out.t1());
         int r = out.t2();
-        for(int i = 0; i< out.t1(); i++){
+        logger.info("position -> {} times -> {}", r, out.t1());
+        for(int i = 0; i < out.t1(); i++){
             final var value = decodeOne(data, r);
             set.add(value);
+            logger.info("{}",value);
             r = value.pos;
+            logger.info("{}", r);
         }return new Ct.RESPSet(set, r);
     }
 
