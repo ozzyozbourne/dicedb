@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static java.lang.String.format;
 
@@ -45,6 +46,14 @@ public final class RESPDecoder {
         return value == 0? new Ct.RESPLong(value, pos + 2): new Ct.RESPLong(value * sign, pos + 2);
     }
 
+    private static Ct.RESPBoolean readBoolean(final byte[] data, final int pos) {
+        return (data[pos]) == 't'? new Ct.RESPBoolean(true, pos + 3): new Ct.RESPBoolean(false, pos + 3);
+    }
+
+    private static Ct.RESPNull readNull(final int pos) {
+        return new Ct.RESPNull(pos + 2);
+    }
+
     private static Ct.RESPSimpleString readSimpleString(final byte[] data, int pos) {
         while (data[pos] != '\r') pos++;
         return new Ct.RESPSimpleString(new String(data, 1, pos - 1),pos + 2);
@@ -70,37 +79,28 @@ public final class RESPDecoder {
         }return new Ct.RESPArray(arr, r);
     }
 
-    private static Ct.RESPBoolean readBoolean(final byte[] data, final int pos) {
-        return (data[pos]) == 't'? new Ct.RESPBoolean(true, pos + 3): new Ct.RESPBoolean(false, pos + 3);
-    }
-    private static Ct.RESPNull readNull(final byte[] data, final int pos) {return new Ct.RESPNull(pos + 2);}
-
-    private static Ct.RESPMap readMap(final byte[] data, final int pos) {return new Ct.RESPMap(new HashMap<>(), 1);}
-
-    private static Ct.RESPSet readSet(final byte[] data, final int pos) {return new Ct.RESPSet(new HashSet<>(), 1);}
-
-    private static Ct.RESPSimpleString readUptoPoint(final byte[] data, int pos) {
-        final var start = pos;
-        while (data[pos] != '.') pos++;
-        return new Ct.RESPSimpleString(new String(data, start, pos - start),pos + 1);
+    private static Ct.RESPMap readMap(final byte[] data, final int pos) {
+        return new Ct.RESPMap(new HashMap<>(), 1);
     }
 
-    private static Ct.RESPSimpleString readAfterPoint(final byte[] data, int pos) {
-        final int start = pos;
-        while (data[pos] != '\r') pos++;
-        return new Ct.RESPSimpleString(new String(data, start, pos - start),pos + 2);
-    }
-
-    private static Optional<Ct.RESPDouble> checkInfAndNan(final byte[] data, final int pos, final char sign) {
-        return switch (new String(data, pos, 3)){
-            case "inf" -> sign == '-'? Optional.of(new Ct.RESPDouble(Double.NEGATIVE_INFINITY, pos + 5)):
-                Optional.of(new Ct.RESPDouble(Double.POSITIVE_INFINITY, pos + 5));
-            case "nan" -> Optional.of(new Ct.RESPDouble(Double.NaN, pos + 5));
-            default -> Optional.empty();
-        };
+    private static Ct.RESPSet readSet(final byte[] data, final int pos) {
+        return new Ct.RESPSet(new HashSet<>(), 1);
     }
 
     private static Ct.RESPDouble readDouble(final byte[] data, int pos) {
+
+        final Function<Integer, Ct.RESPSimpleString> readUptoPoint = p ->  {
+            final var start = p;
+            while (data[p] != '.') p++;
+            return new Ct.RESPSimpleString(new String(data, start, p - start),p + 1);
+        };
+
+        final Function<Integer, Ct.RESPSimpleString> readAfterPoint = p ->  {
+            final int start = p;
+            while (data[p] != '\r') p++;
+            return new Ct.RESPSimpleString(new String(data, start, p - start),p + 2);
+        };
+
         final var sign = switch (data[pos]) {
             case '+' -> {
                 pos += 1;
@@ -113,11 +113,18 @@ public final class RESPDecoder {
             default -> '+';
         };
 
-        final var infNanCheck = checkInfAndNan(data, pos, sign);
+        final Function<Integer, Optional<Ct.RESPDouble>> checkInfAndNan  = p -> switch (new String(data, p, 3)){
+            case "inf" -> sign == '-'? Optional.of(new Ct.RESPDouble(Double.NEGATIVE_INFINITY, p + 5)):
+                    Optional.of(new Ct.RESPDouble(Double.POSITIVE_INFINITY, p + 5));
+            case "nan" -> Optional.of(new Ct.RESPDouble(Double.NaN, p + 5));
+            default -> Optional.empty();
+        };
+
+        final var infNanCheck = checkInfAndNan.apply(pos);
         if (infNanCheck.isPresent()) return infNanCheck.get();
 
-        final var n1 = readUptoPoint(data, pos);
-        final var n2 = readAfterPoint(data, n1.pos);
+        final var n1 = readUptoPoint.apply(pos);
+        final var n2 = readAfterPoint.apply(n1.pos);
 
         return Integer.parseInt(n1.val) == 0 && Integer.parseInt(n2.val) == 0?
                 new Ct.RESPDouble(Double.parseDouble(format("%d.%d", 0, 0)), n2.pos):
@@ -132,7 +139,7 @@ public final class RESPDecoder {
             case ':' -> readLong(data, pos + 1);
             case '$' -> readBulkString(data, pos + 1);
             case '*' -> readArray(data, pos + 1);
-            case '_' -> readNull(data, pos + 1);
+            case '_' -> readNull(pos + 1);
             case '#' -> readBoolean(data, pos + 1);
             case '%' -> readMap(data, pos + 1);
             case '~' -> readSet(data, pos + 1);
