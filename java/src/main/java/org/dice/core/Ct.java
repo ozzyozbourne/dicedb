@@ -326,7 +326,7 @@ public final class Ct {
 
         @Override
         public int hashCode() {
-            return Objects.hash(val, pos);
+            return Objects.hash(Arrays.hashCode(val), pos);
         }
     }
 

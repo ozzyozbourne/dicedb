@@ -37,12 +37,10 @@ public final class RESPDecoder {
             default -> 1;
         };
         long value = 0;
-
         while (data[pos] != '\r') {
             value = value * 10 + (data[pos] - '0');
             pos += 1;
         }
-
         return value == 0? new Ct.RESPLong(value, pos + 2): new Ct.RESPLong(value * sign, pos + 2);
     }
 
@@ -55,7 +53,6 @@ public final class RESPDecoder {
     }
 
     private static Ct.RESPSimpleString readSimpleString(final byte[] data, int pos) {
-        logger.info("Simple String init -> {}", pos);
         final var start = pos;
         while (data[pos] != '\r') pos += 1;
         return new Ct.RESPSimpleString(new String(data, start, pos - start),pos + 2);
@@ -97,13 +94,10 @@ public final class RESPDecoder {
         final var out = readLen(data, pos);
         final var set = new HashSet<Ct.RESPTypes>(out.t1());
         int r = out.t2();
-        logger.info("position -> {} times -> {}", r, out.t1());
         for(int i = 0; i < out.t1(); i++){
             final var value = decodeOne(data, r);
             set.add(value);
-            logger.info("{}",value);
             r = value.pos;
-            logger.info("{}", r);
         }return new Ct.RESPSet(set, r);
     }
 
@@ -150,7 +144,6 @@ public final class RESPDecoder {
                 new Ct.RESPDouble(Double.parseDouble(format("%d.%d", 0, 0)), n2.pos):
                 new Ct.RESPDouble(Double.parseDouble(format("%c%s.%s", sign, n1.val, n2.val)), n2.pos);
     }
-
 
     private static Ct.RESPTypes decodeOne(final byte[] data, final int pos) throws IllegalStateException {
         return switch (data[pos]) {

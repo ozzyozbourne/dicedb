@@ -325,4 +325,14 @@ public final class RESPDecoderTest {
             }
         });
     }
+
+    @Test
+    public void arrayTest(){
+
+    }
+
+    @Test
+    public void mapTest(){
+
+    }
 }
