@@ -7,10 +7,13 @@ import org.dice.core.Ct;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.dice.core.RESPDecoder.decode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public final class RESPDecoderTest {
 
@@ -245,6 +248,79 @@ public final class RESPDecoderTest {
         });
     }
 
+    @Test
+    public void setTest() {
 
+        final var testcases = Map.of(
 
+                "~0\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(), 4),
+
+                "~1\r\n+OK\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(new Ct.RESPSimpleString("OK", 7)), 10),
+
+                "~2\r\n+Hello\r\n+World\r\n", new Ct.Tuple<>(Set.of(
+                        new Ct.RESPSimpleString("Hello", 12),
+                        new Ct.RESPSimpleString("World", 20)
+                ), 20),
+
+                "~3\r\n:1\r\n:2\r\n:3\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
+                        new Ct.RESPLong(1L, 8),
+                        new Ct.RESPLong(2L, 12),
+                        new Ct.RESPLong(3L, 16)
+                ), 16)
+
+//                "~2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n", new Ct.Tuple<>(Set.of(
+//                        new Ct.RESPBulkString("foo", 9),
+//                        new Ct.RESPBulkString("bar", 18)
+//                ), 20),
+//                "~1\r\n~2\r\n:1\r\n:2\r\n", new Ct.Tuple<>(Set.of(
+//                        new Ct.RESPSet(Set.of(
+//                                new Ct.RESPLong(1L, 13),
+//                                new Ct.RESPLong(2L, 16)
+//                        ), 18)
+//                ), 20),
+//                "~2\r\n$5\r\nhello\r\n$5\r\nworld\r\n", new Ct.Tuple<>(Set.of(
+//                        new Ct.RESPBulkString("hello", 11),
+//                        new Ct.RESPBulkString("world", 22)
+//                ), 24),
+//                "~2\r\n+OK\r\n-Error message\r\n", new Ct.Tuple<>(Set.of(
+//                        new Ct.RESPSimpleString("OK", 7),
+//                        new Ct.RESPError("Error message", 23)
+//                ), 25),
+//                "~1\r\n,1.23\r\n", new Ct.Tuple<>(Set.of(new Ct.RESPDouble(1.23, 9)), 11),
+//                "~1\r\n,true\r\n", new Ct.Tuple<>(Set.of(new Ct.RESPBoolean(true, 9)), 11)
+        );
+
+        testcases.forEach((input, expected) -> {
+            try {
+                final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
+                    case Ct.RESPSet res -> res;
+                    default -> throw new RuntimeException("FAILED PATTERN MATCH");
+                };
+                //Check Size
+                assertEquals(expected.t1().size(), output.val.size(), expected.t1().toString());
+                //Check Elements
+                expected.t1().forEach(s ->{
+                    final var exp = switch (s){
+                        case Ct.RESPSet res -> res;
+                        case Ct.RESPArray res -> res;
+                        case Ct.RESPMap res -> res;
+                        case Ct.RESPVerbatimString res -> res;
+                        case Ct.RESPSimpleString res -> res;
+                        case Ct.RESPBoolean res -> res;
+                        case Ct.RESPBulkString res -> res;
+                        case Ct.RESPDouble res -> res;
+                        case Ct.RESPNull res -> res;
+                        case Ct.RESPLong res -> res;
+                        case Ct.RESPError res -> res;
+                    };
+                    assertTrue(output.val.contains(s), s.toString());
+                });
+                //assertEquals(expected.t2(), output.pos, expected.t1());
+
+            } catch (final Exception e) {
+                logger.error(e);
+                throw new AssertionError(e);
+            }
+        });
+    }
 }

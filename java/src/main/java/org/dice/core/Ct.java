@@ -1,6 +1,8 @@
 package org.dice.core;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -50,6 +52,24 @@ public final class Ct {
         private RESPTypes(final Integer pos) {
             this.pos = pos;
         }
+
+        @Override
+        public String toString() {
+            return "RESPTypes{pos=%d}".formatted(pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPTypes that = (RESPTypes) o;
+            return Objects.equals(pos, that.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(pos);
+        }
     }
 
     /**
@@ -65,6 +85,20 @@ public final class Ct {
         private RESPVerbatimString(final Integer pos) {
             super(pos);
         }
+
+        @Override
+        public String toString() {
+            return "RESPVerbatimString{pos=%d}".formatted(pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPVerbatimString that = (RESPVerbatimString) o;
+            return Objects.equals(pos, that.pos);
+        }
+
     }
 
     /**
@@ -86,6 +120,24 @@ public final class Ct {
         public RESPDouble(final Double val, final Integer pos) {
             super(pos);
             this.val = val;
+        }
+
+        @Override
+        public String toString() {
+            return "RESPDouble{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPDouble that = (RESPDouble) o;
+            return Objects.equals(val, that.val) && Objects.equals(pos, that.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
         }
     }
 
@@ -109,6 +161,24 @@ public final class Ct {
             super(pos);
             this.val = val;
         }
+
+        @Override
+        public String toString() {
+            return "RESPSet{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPSet respSet = (RESPSet) o;
+            return Objects.equals(val, respSet.val) && Objects.equals(pos, respSet.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
+        }
     }
 
     /**
@@ -130,6 +200,24 @@ public final class Ct {
         public RESPMap(final Map<RESPTypes, RESPTypes> val, final Integer pos) {
             super(pos);
             this.val = val;
+        }
+
+        @Override
+        public String toString() {
+            return "RESPMap{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPMap respMap = (RESPMap) o;
+            return Objects.equals(val, respMap.val) && Objects.equals(pos, respMap.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
         }
     }
 
@@ -153,6 +241,24 @@ public final class Ct {
             super(pos);
             this.val = val;
         }
+
+        @Override
+        public String toString() {
+            return "RESPBoolean{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPBoolean that = (RESPBoolean) o;
+            return Objects.equals(val, that.val) && Objects.equals(pos, that.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
+        }
     }
 
     /**
@@ -168,6 +274,20 @@ public final class Ct {
         public RESPNull(final Integer pos) {
             super(pos);
         }
+
+        @Override
+        public String toString() {
+            return "RESPNull{pos=%d}".formatted(pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPNull respNull = (RESPNull) o;
+            return Objects.equals(pos, respNull.pos);
+        }
+
     }
 
     /**
@@ -189,6 +309,24 @@ public final class Ct {
         public RESPArray(final RESPTypes[] val, final Integer pos) {
             super(pos);
             this.val = val;
+        }
+
+        @Override
+        public String toString() {
+            return "RESPArray{val=%s, pos=%d}".formatted(Arrays.toString(val), pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPArray respArray = (RESPArray) o;
+            return Arrays.equals(val, respArray.val) && Objects.equals(pos, respArray.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
         }
     }
 
@@ -212,6 +350,24 @@ public final class Ct {
             super(pos);
             this.val = val;
         }
+
+        @Override
+        public String toString() {
+            return "RESPLong{val=%d, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPLong respLong = (RESPLong) o;
+            return Objects.equals(val, respLong.val) && Objects.equals(pos, respLong.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
+        }
     }
 
     /**
@@ -233,6 +389,24 @@ public final class Ct {
         public RESPBulkString(final String val, final Integer pos) {
             super(pos);
             this.val = val;
+        }
+
+        @Override
+        public String toString() {
+            return "RESPBulkString{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPBulkString that = (RESPBulkString) o;
+            return Objects.equals(val, that.val) && Objects.equals(pos, that.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
         }
     }
 
@@ -256,6 +430,24 @@ public final class Ct {
             super(pos);
             this.val = val;
         }
+
+        @Override
+        public String toString() {
+            return "RESPError{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPError respError = (RESPError) o;
+            return Objects.equals(val, respError.val) && Objects.equals(pos, respError.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
+        }
     }
 
     /**
@@ -277,6 +469,24 @@ public final class Ct {
         public RESPSimpleString(final String val, final Integer pos) {
             super(pos);
             this.val = val;
+        }
+
+        @Override
+        public String toString() {
+            return "RESPSimpleString{val=%s, pos=%d}".formatted(val, pos);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RESPSimpleString that = (RESPSimpleString) o;
+            return Objects.equals(val, that.val) && Objects.equals(pos, that.pos);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(val, pos);
         }
     }
 }

@@ -80,11 +80,26 @@ public final class RESPDecoder {
     }
 
     private static Ct.RESPMap readMap(final byte[] data, final int pos) {
-        return new Ct.RESPMap(new HashMap<>(), 1);
+        final var out = readLen(data, pos);
+        final var map = new HashMap<Ct.RESPTypes, Ct.RESPTypes>(out.t1());
+        int r = out.t2();
+        for(int i = 0; i< out.t1(); i++){
+            final var key = decodeOne(data, r);
+            final var value = decodeOne(data, key.pos);
+            map.put(key, value);
+            r = value.pos;
+        }return new Ct.RESPMap(map, r);
     }
 
     private static Ct.RESPSet readSet(final byte[] data, final int pos) {
-        return new Ct.RESPSet(new HashSet<>(), 1);
+        final var out = readLen(data, pos);
+        final var set = new HashSet<Ct.RESPTypes>(out.t1());
+        int r = out.t2();
+        for(int i = 0; i< out.t1(); i++){
+            final var value = decodeOne(data, r);
+            set.add(value);
+            r = value.pos;
+        }return new Ct.RESPSet(set, r);
     }
 
     private static Ct.RESPDouble readDouble(final byte[] data, int pos) {
