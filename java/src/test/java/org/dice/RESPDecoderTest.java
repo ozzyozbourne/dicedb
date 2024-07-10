@@ -6,6 +6,7 @@ import org.dice.core.Ct;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -247,7 +248,7 @@ public final class RESPDecoderTest {
     }
 
     @Test
-    public void setTestSameTypes() {
+    public void setTest() {
 
         final var testcases = Map.of(
 
@@ -271,13 +272,13 @@ public final class RESPDecoderTest {
                         new Ct.RESPBulkString("bar", 22)
                 ), 22),
 
-                "~3\r\n#t\r\n#f\r\n_\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
+                "~3\r\n#t\r\n#f\r\n_\r\n", new Ct.Tuple<>(Set.of(
                         new Ct.RESPBoolean(true, 8),
                         new Ct.RESPBoolean(false, 12),
                         new Ct.RESPNull(15)
-                        ), 15),
+                ), 15),
 
-                "~6\r\n,inf\r\n,-101.23123\r\n-ERR unknown command\r\n,nan\r\n$3\r\nbar\r\n:1000\r\n", new Ct.Tuple<Set<Ct.RESPTypes>, Integer>(Set.of(
+                "~6\r\n,inf\r\n,-101.23123\r\n-ERR unknown command\r\n,nan\r\n$3\r\nbar\r\n:1000\r\n", new Ct.Tuple<>(Set.of(
                         new Ct.RESPDouble(Double.POSITIVE_INFINITY, 10),
                         new Ct.RESPDouble(-101.23123, 23),
                         new Ct.RESPError("ERR unknown command", 45),
@@ -290,7 +291,7 @@ public final class RESPDecoderTest {
 
         testcases.forEach((input, expected) -> {
             try {
-                logger.info("input is -> {}", input);
+                logger.info("input set is -> {}", input);
                 final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
                     case Ct.RESPSet res -> res;
                     default -> throw new RuntimeException("FAILED PATTERN MATCH");
@@ -328,7 +329,91 @@ public final class RESPDecoderTest {
 
     @Test
     public void arrayTest(){
+        final var testcases = Map.of(
 
+                "*0\r\n", new Ct.Tuple<>(new Ct.RESPTypes[]{}, 4),
+
+                "*1\r\n+OK\r\n", new Ct.Tuple<>(new Ct.RESPTypes[]{new Ct.RESPSimpleString("OK", 9)}, 9),
+
+                "*7\r\n,inf\r\n,-101.23123\r\n-ERR unknown command\r\n" +
+                        "*5\r\n:1\r\n$3\r\nfoo\r\n#t\r\n_\r\n,-101.23123\r\n"+
+                        ",nan\r\n$3\r\nbar\r\n:1000\r\n",
+                new Ct.Tuple<>(
+                        new Ct.RESPTypes[]{
+                        new Ct.RESPDouble(Double.POSITIVE_INFINITY, 10),
+                        new Ct.RESPDouble(-101.23123, 23),
+                        new Ct.RESPError("ERR unknown command", 45),
+                        new Ct.RESPArray(new Ct.RESPTypes[]{
+                                new Ct.RESPLong(1L, 53),
+                                new Ct.RESPBulkString("foo", 62),
+                                new Ct.RESPBoolean(true, 66),
+                                new Ct.RESPNull(69),
+                                new Ct.RESPDouble(-101.23123, 82)
+                        },82),
+                        new Ct.RESPDouble(Double.NaN, 88),
+                        new Ct.RESPBulkString("bar", 97),
+                        new Ct.RESPLong(1000L, 104)}
+                        , 104)
+        );
+
+        testcases.forEach((input, expected) -> {
+            try {
+                logger.info("input array is -> {}", input);
+                final var output = switch (decode(input.getBytes(StandardCharsets.US_ASCII))) {
+                    case Ct.RESPArray res -> res;
+                    default -> throw new RuntimeException("FAILED PATTERN MATCH");
+                };
+
+                //Check Size
+                assertEquals(expected.t1().length, output.val.length, Arrays.toString(expected.t1()));
+
+                //Check Elements
+                Arrays.stream(expected.t1()).forEach(s ->{
+                    switch (s){
+                        case Ct.RESPSet res            ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPArray res          ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPMap res            ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPVerbatimString res ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPSimpleString res   ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPBoolean res        ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPBulkString res     ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPDouble res         ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPNull res           ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPLong res           ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                        case Ct.RESPError res          ->
+                                assertEquals(1L, Arrays.stream(output.val).filter(a -> a.equals(res)).count(), "Actual Array -> %s\nExpected Value -> %s".formatted(Arrays.toString(output.val), res.toString()));
+
+                    }
+                });
+
+                //Check pos
+                assertEquals(expected.t2(), output.pos, Arrays.toString(expected.t1()));
+
+            } catch (final Exception e) {
+                logger.error(e);
+                throw new AssertionError(e);
+            }
+        });
     }
 
     @Test

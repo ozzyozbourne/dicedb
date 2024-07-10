@@ -40,9 +40,10 @@ final public class TcpSync {
         final var buffer = new byte[512];
         final var byteArrayOutputStream = new ByteArrayOutputStream();
         int bytesRead;
-        if((bytesRead =input.read(buffer)) != -1){
+        if((bytesRead = input.read(buffer)) != -1){
             byteArrayOutputStream.write(buffer, 0, bytesRead);
             logger.info("Read: {}", new String(buffer));
+
         }return byteArrayOutputStream.toByteArray();
     }
 
